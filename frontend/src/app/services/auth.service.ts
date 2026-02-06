@@ -55,7 +55,22 @@ export class AuthService {
   private handleGoogleResponse(response: any): void {
     const idToken = response.credential;
 
-    this.http.post<AuthResponse>(`${environment.apiUrl}/users/google-signin`, {
+    // Use the public method for better subscription management
+    this.googleSignIn(idToken).subscribe({
+      next: (user) => {
+        console.log('Google Sign-In successful:', user);
+        // Navigate to dashboard (handled by component)
+        window.location.href = '/dashboard';
+      },
+      error: (error) => {
+        console.error('Google Sign-In failed:', error);
+        alert('Failed to sign in with Google');
+      }
+    });
+  }
+
+  googleSignIn(idToken: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/users/google-signin`, {
       idToken: idToken
     }).pipe(
       tap(user => {
@@ -65,20 +80,7 @@ export class AuthService {
         localStorage.setItem('user', JSON.stringify(user));
         this.currentUserSubject.next(user);
       })
-    ).subscribe({
-      next: (user) => {
-        console.log('Google Sign-In successful:', user);
-        if (user.isNewUser) {
-          console.log('Welcome! New user created.');
-        }
-        // Navigate to dashboard or home
-        // window.location.href = '/dashboard';
-      },
-      error: (error) => {
-        console.error('Google Sign-In failed:', error);
-        alert('Failed to sign in with Google');
-      }
-    });
+    );
   }
 
   regularLogin(email: string, password: string): Observable<AuthResponse> {
@@ -143,6 +145,10 @@ export class AuthService {
 
   getToken(): string | null {
     return localStorage.getItem('token');
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refreshToken');
   }
 
   getCurrentUser(): AuthResponse | null {

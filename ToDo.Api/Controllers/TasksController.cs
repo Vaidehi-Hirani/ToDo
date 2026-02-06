@@ -23,134 +23,175 @@ public class TasksController : ControllerBase
     private int GetUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
-        if (userIdClaim == null) return 0;
-        return int.Parse(userIdClaim.Value);
+
+        if (userIdClaim == null)
+            throw new UnauthorizedAccessException("User identifier not found in token claims");
+
+        if (!int.TryParse(userIdClaim.Value, out var userId))
+            throw new UnauthorizedAccessException("User identifier has invalid format");
+
+        return userId;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<TaskDto>>> GetTasks([FromQuery] int? projectId)
     {
-        var userId = GetUserId();
-        var query = _context.TaskItems
-            .Include(t => t.Project)
-            .Where(t => t.UserId == userId && !t.IsDeleted);
-
-        if (projectId.HasValue)
+        try
         {
-            query = query.Where(t => t.ProjectId == projectId.Value);
-        }
+            var userId = GetUserId();
+            var query = _context.TaskItems
+                .Include(t => t.Project)
+                .Where(t => t.UserId == userId && !t.IsDeleted);
 
-        var tasks = await query.ToListAsync();
-        return Ok(tasks.Select(MapToTaskDto));
+            if (projectId.HasValue)
+            {
+                query = query.Where(t => t.ProjectId == projectId.Value);
+            }
+
+            var tasks = await query.ToListAsync();
+            return Ok(tasks.Select(MapToTaskDto));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<TaskDto>> GetTask(int id)
     {
-        var userId = GetUserId();
-        var task = await _context.TaskItems
-            .Include(t => t.Project)
-            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId && !t.IsDeleted);
-
-        if (task == null)
+        try
         {
-            return NotFound();
-        }
+            var userId = GetUserId();
+            var task = await _context.TaskItems
+                .Include(t => t.Project)
+                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId && !t.IsDeleted);
 
-        return Ok(MapToTaskDto(task));
+            if (task == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(MapToTaskDto(task));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 
     [HttpPost]
     public async Task<ActionResult<TaskDto>> CreateTask(CreateTaskDto dto)
     {
-        var userId = GetUserId();
-
-        // If ProjectId is provided, verify it belongs to the user
-        if (dto.ProjectId.HasValue)
+        try
         {
-            var projectExists = await _context.Projects
-                .AnyAsync(p => p.Id == dto.ProjectId.Value && p.UserId == userId && !p.IsDeleted);
-            if (!projectExists)
+            var userId = GetUserId();
+
+            // If ProjectId is provided, verify it belongs to the user
+            if (dto.ProjectId.HasValue)
             {
-                return BadRequest("Invalid ProjectId");
+                var projectExists = await _context.Projects
+                    .AnyAsync(p => p.Id == dto.ProjectId.Value && p.UserId == userId && !p.IsDeleted);
+                if (!projectExists)
+                {
+                    return BadRequest("Invalid ProjectId");
+                }
             }
+
+            var task = new TaskItem
+            {
+                Title = dto.Title,
+                Description = dto.Description,
+                DueDate = dto.DueDate,
+                Priority = dto.Priority,
+                Category = dto.Category,
+                RepeatType = dto.RepeatType,
+                ProjectId = dto.ProjectId,
+                UserId = userId,
+                IsCompleted = false
+            };
+
+            _context.TaskItems.Add(task);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetTask), new { id = task.Id }, MapToTaskDto(task));
         }
-
-        var task = new TaskItem
+        catch (UnauthorizedAccessException ex)
         {
-            Title = dto.Title,
-            Description = dto.Description,
-            DueDate = dto.DueDate,
-            Priority = dto.Priority,
-            Category = dto.Category,
-            RepeatType = dto.RepeatType,
-            ProjectId = dto.ProjectId,
-            UserId = userId,
-            IsCompleted = false
-        };
-
-        _context.TaskItems.Add(task);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetTask), new { id = task.Id }, MapToTaskDto(task));
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateTask(int id, UpdateTaskDto dto)
     {
-        var userId = GetUserId();
-        var task = await _context.TaskItems
-            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId && !t.IsDeleted);
-
-        if (task == null)
+        try
         {
-            return NotFound();
-        }
+            var userId = GetUserId();
+            var task = await _context.TaskItems
+                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId && !t.IsDeleted);
 
-        if (dto.ProjectId.HasValue)
-        {
-            var projectExists = await _context.Projects
-                .AnyAsync(p => p.Id == dto.ProjectId.Value && p.UserId == userId && !p.IsDeleted);
-            if (!projectExists)
+            if (task == null)
             {
-                return BadRequest("Invalid ProjectId");
+                return NotFound();
             }
-            task.ProjectId = dto.ProjectId;
-        }
 
-        if (dto.Title != null) task.Title = dto.Title;
-        if (dto.Description != null) task.Description = dto.Description;
-        if (dto.IsCompleted.HasValue) 
+            if (dto.ProjectId.HasValue)
+            {
+                var projectExists = await _context.Projects
+                    .AnyAsync(p => p.Id == dto.ProjectId.Value && p.UserId == userId && !p.IsDeleted);
+                if (!projectExists)
+                {
+                    return BadRequest("Invalid ProjectId");
+                }
+                task.ProjectId = dto.ProjectId;
+            }
+
+            if (dto.Title != null) task.Title = dto.Title;
+            if (dto.Description != null) task.Description = dto.Description;
+            if (dto.IsCompleted.HasValue)
+            {
+                task.IsCompleted = dto.IsCompleted.Value;
+                task.CompletedAt = task.IsCompleted ? DateTime.UtcNow : null;
+            }
+            if (dto.DueDate != null) task.DueDate = dto.DueDate;
+            if (dto.Priority != null) task.Priority = dto.Priority;
+            if (dto.Category != null) task.Category = dto.Category;
+            if (dto.RepeatType != null) task.RepeatType = dto.RepeatType;
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
         {
-            task.IsCompleted = dto.IsCompleted.Value;
-            task.CompletedAt = task.IsCompleted ? DateTime.UtcNow : null;
+            return Unauthorized(new { message = ex.Message });
         }
-        if (dto.DueDate != null) task.DueDate = dto.DueDate;
-        if (dto.Priority != null) task.Priority = dto.Priority;
-        if (dto.Category != null) task.Category = dto.Category;
-        if (dto.RepeatType != null) task.RepeatType = dto.RepeatType;
-
-        await _context.SaveChangesAsync();
-
-        return NoContent();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTask(int id)
     {
-        var userId = GetUserId();
-        var task = await _context.TaskItems
-            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId && !t.IsDeleted);
-
-        if (task == null)
+        try
         {
-            return NotFound();
+            var userId = GetUserId();
+            var task = await _context.TaskItems
+                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId && !t.IsDeleted);
+
+            if (task == null)
+            {
+                return NotFound();
+            }
+
+            task.IsDeleted = true;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
-
-        task.IsDeleted = true;
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 
     private static TaskDto MapToTaskDto(TaskItem t)

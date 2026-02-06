@@ -23,102 +23,143 @@ public class ProjectsController : ControllerBase
     private int GetUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
-        if (userIdClaim == null) return 0;
-        return int.Parse(userIdClaim.Value);
+
+        if (userIdClaim == null)
+            throw new UnauthorizedAccessException("User identifier not found in token claims");
+
+        if (!int.TryParse(userIdClaim.Value, out var userId))
+            throw new UnauthorizedAccessException("User identifier has invalid format");
+
+        return userId;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ProjectDto>>> GetProjects()
     {
-        var userId = GetUserId();
-        var projects = await _context.Projects
-            .Where(p => p.UserId == userId && !p.IsDeleted)
-            .Include(p => p.Tasks)
-            .ToListAsync();
+        try
+        {
+            var userId = GetUserId();
+            var projects = await _context.Projects
+                .Where(p => p.UserId == userId && !p.IsDeleted)
+                .Include(p => p.Tasks)
+                .ToListAsync();
 
-        return Ok(projects.Select(MapToProjectDto));
+            return Ok(projects.Select(MapToProjectDto));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<ProjectDto>> GetProject(int id)
     {
-        var userId = GetUserId();
-        var project = await _context.Projects
-            .Include(p => p.Tasks)
-            .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId && !p.IsDeleted);
-
-        if (project == null)
+        try
         {
-            return NotFound();
-        }
+            var userId = GetUserId();
+            var project = await _context.Projects
+                .Include(p => p.Tasks)
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId && !p.IsDeleted);
 
-        return Ok(MapToProjectDto(project));
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(MapToProjectDto(project));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 
     [HttpPost]
     public async Task<ActionResult<ProjectDto>> CreateProject(CreateProjectDto dto)
     {
-        var userId = GetUserId();
-        var project = new Project
+        try
         {
-            Name = dto.Name,
-            Description = dto.Description,
-            DueDate = dto.DueDate,
-            UserId = userId
-        };
+            var userId = GetUserId();
+            var project = new Project
+            {
+                Name = dto.Name,
+                Description = dto.Description,
+                DueDate = dto.DueDate,
+                UserId = userId
+            };
 
-        _context.Projects.Add(project);
-        await _context.SaveChangesAsync();
+            _context.Projects.Add(project);
+            await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetProject), new { id = project.Id }, MapToProjectDto(project));
+            return CreatedAtAction(nameof(GetProject), new { id = project.Id }, MapToProjectDto(project));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateProject(int id, UpdateProjectDto dto)
     {
-        var userId = GetUserId();
-        var project = await _context.Projects
-            .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId && !p.IsDeleted);
-
-        if (project == null)
+        try
         {
-            return NotFound();
+            var userId = GetUserId();
+            var project = await _context.Projects
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId && !p.IsDeleted);
+
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            if (dto.Name != null) project.Name = dto.Name;
+            if (dto.Description != null) project.Description = dto.Description;
+            if (dto.DueDate != null) project.DueDate = dto.DueDate;
+            if (dto.IsCompleted.HasValue) project.IsCompleted = dto.IsCompleted.Value;
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
-
-        if (dto.Name != null) project.Name = dto.Name;
-        if (dto.Description != null) project.Description = dto.Description;
-        if (dto.DueDate != null) project.DueDate = dto.DueDate;
-        if (dto.IsCompleted.HasValue) project.IsCompleted = dto.IsCompleted.Value;
-
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteProject(int id)
     {
-        var userId = GetUserId();
-        var project = await _context.Projects
-            .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId && !p.IsDeleted);
-
-        if (project == null)
+        try
         {
-            return NotFound();
-        }
+            var userId = GetUserId();
+            var project = await _context.Projects
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId && !p.IsDeleted);
 
-        project.IsDeleted = true;
-        
-        // Soft delete associated tasks
-        var tasks = await _context.TaskItems.Where(t => t.ProjectId == id).ToListAsync();
-        foreach (var task in tasks)
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            project.IsDeleted = true;
+
+            // Soft delete associated tasks
+            var tasks = await _context.TaskItems.Where(t => t.ProjectId == id).ToListAsync();
+            foreach (var task in tasks)
+            {
+                task.IsDeleted = true;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
         {
-            task.IsDeleted = true;
+            return Unauthorized(new { message = ex.Message });
         }
-
-        await _context.SaveChangesAsync();
-
-        return NoContent();
     }
 
     private static ProjectDto MapToProjectDto(Project project)

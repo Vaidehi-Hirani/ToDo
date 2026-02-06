@@ -121,9 +121,12 @@ public class UsersController : ControllerBase
         try
         {
             // Verify the Google ID token
+            var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")
+                ?? _config["Google:ClientId"];
+
             var settings = new GoogleJsonWebSignature.ValidationSettings
             {
-                Audience = new[] { _config["Google:ClientId"]! }
+                Audience = new[] { googleClientId! }
             };
 
             var payload = await GoogleJsonWebSignature.ValidateAsync(dto.IdToken, settings);
@@ -171,7 +174,9 @@ public class UsersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { message = "Failed to authenticate with Google", error = ex.Message });
+            // Log the actual error for debugging (use proper logging in production)
+            Console.Error.WriteLine($"Google Sign-In Error: {ex}");
+            return BadRequest(new { message = "Failed to authenticate with Google. Please try again." });
         }
     }
 
@@ -196,6 +201,11 @@ public class UsersController : ControllerBase
         if (userId == null)
         {
              userId = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
+        }
+
+        if (userId == null)
+        {
+            return BadRequest("Invalid access token: user identifier not found");
         }
 
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id.ToString() == userId);
@@ -233,8 +243,15 @@ public class UsersController : ControllerBase
             new Claim("name", user.Name)
         };
 
+        var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
+            ?? _config["Jwt:Key"];
+        var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER")
+            ?? _config["Jwt:Issuer"];
+        var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")
+            ?? _config["Jwt:Audience"];
+
         var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
+            Encoding.UTF8.GetBytes(jwtKey!)
         );
 
         var creds = new SigningCredentials(
@@ -243,8 +260,8 @@ public class UsersController : ControllerBase
         );
 
         var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
+            issuer: jwtIssuer,
+            audience: jwtAudience,
             claims: claims,
             expires: DateTime.UtcNow.AddMinutes(15), // Shorter expiry for access token
             signingCredentials: creds
@@ -263,21 +280,42 @@ public class UsersController : ControllerBase
 
     private ClaimsPrincipal? GetPrincipalFromExpiredToken(string? token)
     {
+        if (string.IsNullOrEmpty(token))
+            return null;
+
+        var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
+            ?? _config["Jwt:Key"];
+        var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER")
+            ?? _config["Jwt:Issuer"];
+        var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")
+            ?? _config["Jwt:Audience"];
+
         var tokenValidationParameters = new TokenValidationParameters
         {
-            ValidateAudience = false, // You might want to validate this in production
-            ValidateIssuer = false,
+            ValidateAudience = true,  // FIXED: Now validates audience
+            ValidateIssuer = true,    // FIXED: Now validates issuer
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)),
-            ValidateLifetime = false
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!)),
+            ValidateLifetime = false  // Required for refresh token flow
         };
 
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
-        if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-            throw new SecurityTokenException("Invalid token");
+        try
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
 
-        return principal;
+            if (securityToken is not JwtSecurityToken jwtSecurityToken ||
+                !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,
+                                                    StringComparison.InvariantCultureIgnoreCase))
+                return null;
 
+            return principal;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

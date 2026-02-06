@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -14,6 +15,7 @@ import { AuthService } from '../../services/auth.service';
 export class RegisterComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
 
   name: string = '';
   email: string = '';
@@ -38,16 +40,19 @@ export class RegisterComponent {
     }
 
     this.isLoading = true;
-    this.authService.register(this.name, this.email, this.password).subscribe({
-      next: (response) => {
-        console.log('Registration successful:', response);
-        this.router.navigate(['/dashboard']);
-      },
-      error: (error) => {
-        console.error('Registration failed:', error);
-        alert(error.error?.message || 'Registration failed. Please try again.');
-        this.isLoading = false;
-      }
-    });
+    this.authService.register(this.name, this.email, this.password)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          console.log('Registration successful:', response);
+          this.isLoading = false;  // FIXED: Reset loading state
+          this.router.navigate(['/dashboard']);
+        },
+        error: (error) => {
+          console.error('Registration failed:', error);
+          alert(error.error?.message || 'Registration failed. Please try again.');
+          this.isLoading = false;
+        }
+      });
   }
 }

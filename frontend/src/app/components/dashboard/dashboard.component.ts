@@ -1,6 +1,7 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService, AuthResponse } from '../../services/auth.service';
 
 @Component({
@@ -13,6 +14,7 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
 export class DashboardComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
 
   currentUser: AuthResponse | null = null;
 
@@ -23,9 +25,11 @@ export class DashboardComponent implements OnInit {
     }
 
     this.currentUser = this.authService.getCurrentUser();
-    this.authService.currentUser$.subscribe(user => {
-      this.currentUser = user;
-    });
+    this.authService.currentUser$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(user => {
+        this.currentUser = user;
+      });
   }
 
   onLogout(): void {

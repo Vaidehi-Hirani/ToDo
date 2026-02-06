@@ -3,42 +3,56 @@ using ToDo.Api.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.AspNetCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add Controllers
 builder.Services.AddControllers();
 
-// DB Context
+// DB Context - Read from environment variable or appsettings
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    );
+    options.UseSqlServer(connectionString);
 });
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS Configuration
+// CORS Configuration - Read from environment variable or appsettings
+var allowedOriginsString = Environment.GetEnvironmentVariable("ALLOWED_ORIGINS");
+var allowedOrigins = !string.IsNullOrEmpty(allowedOriginsString)
+    ? allowedOriginsString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+    : builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+      ?? new[] { "http://localhost:4200" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular",
-        builder => builder
-            .WithOrigins(
-                "http://localhost:4200",
-                "http://localhost:49685"
-            )
+        corsBuilder => corsBuilder
+            .WithOrigins(allowedOrigins)
             .AllowAnyMethod()
-            .AllowAnyHeader());
+            .AllowAnyHeader()
+            .AllowCredentials());
 });
 
 
 // ================= JWT CONFIG =================
 
-// Read JWT Key
-var jwtKey = builder.Configuration["Jwt:Key"];
+// Read JWT settings from environment variables or appsettings
+var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
+    ?? builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("JWT Secret Key is not configured");
+
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER")
+    ?? builder.Configuration["Jwt:Issuer"];
+
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")
+    ?? builder.Configuration["Jwt:Audience"];
 
 // Add Authentication
 builder.Services.AddAuthentication(options =>
@@ -55,15 +69,14 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
 
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
 
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(jwtKey!)
+            Encoding.UTF8.GetBytes(jwtKey)
         )
     };
 });
-
 
 // ================= END JWT CONFIG =================
 
@@ -76,6 +89,33 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Global Exception Handler
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+
+        var exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
+        var exception = exceptionFeature?.Error;
+
+        // Log exception (in production, use proper logging framework)
+        if (exception != null)
+        {
+            Console.Error.WriteLine($"Unhandled exception: {exception}");
+        }
+
+        var response = new
+        {
+            message = "An internal error occurred",
+            error = app.Environment.IsDevelopment() ? exception?.Message : null
+        };
+
+        await context.Response.WriteAsJsonAsync(response);
+    });
+});
 
 app.UseHttpsRedirection();
 

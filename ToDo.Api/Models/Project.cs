@@ -8,6 +8,6 @@ public class Project{
     public bool IsCompleted {get; set;} = false;
     public bool IsDeleted {get; set;} = false;
     public int UserId {get; set;}
-    public User User {get; set;} = null!;
+    public User? User {get; set;}
     public ICollection<TaskItem> Tasks {get; set;} = new List<TaskItem>();
 }

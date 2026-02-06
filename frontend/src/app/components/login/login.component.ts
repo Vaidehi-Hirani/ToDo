@@ -1,7 +1,8 @@
-import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, inject } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -16,6 +17,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
   private authService = inject(AuthService);
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
 
   email: string = '';
   password: string = '';
@@ -44,16 +46,19 @@ export class LoginComponent implements OnInit, AfterViewInit {
     }
 
     this.isLoading = true;
-    this.authService.regularLogin(this.email, this.password).subscribe({
-      next: (response) => {
-        console.log('Login successful:', response);
-        this.router.navigate(['/dashboard']);
-      },
-      error: (error) => {
-        console.error('Login failed:', error);
-        alert('Invalid credentials');
-        this.isLoading = false;
-      }
-    });
+    this.authService.regularLogin(this.email, this.password)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          console.log('Login successful:', response);
+          this.isLoading = false;  // FIXED: Reset loading state
+          this.router.navigate(['/dashboard']);
+        },
+        error: (error) => {
+          console.error('Login failed:', error);
+          alert('Invalid credentials');
+          this.isLoading = false;
+        }
+      });
   }
 }
