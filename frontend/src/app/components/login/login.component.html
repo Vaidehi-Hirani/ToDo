@@ -1,0 +1,53 @@
+<div class="login-container">
+  <div class="login-card">
+    <h2>Sign In to ToDo App</h2>
+
+    <!-- Google Sign-In Button -->
+    <div class="google-signin-section">
+      <div #googleButton></div>
+    </div>
+
+    <div class="divider">
+      <span>OR</span>
+    </div>
+
+    <!-- Regular Login Form -->
+    <form (ngSubmit)="onRegularLogin()" class="login-form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="Enter your email"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          [(ngModel)]="password"
+          name="password"
+          placeholder="Enter your password"
+          required
+        />
+      </div>
+
+      <button
+        type="submit"
+        class="login-button"
+        [disabled]="isLoading"
+      >
+        {{ isLoading ? 'Signing in...' : 'Sign In' }}
+      </button>
+    </form>
+
+    <div class="register-link">
+      Don't have an account? <a routerLink="/register">Register</a>
+    </div>
+  </div>
+</div>

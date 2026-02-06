@@ -1,0 +1,25 @@
+﻿  Determining projects to restore...
+  All projects are up-to-date for restore.
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(25,28): error CS0246: The type or namespace name 'OpenApiInfo' could not be found (are you missing a using directive or an assembly reference?) [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(26,43): error CS0246: The type or namespace name 'OpenApiSecurityScheme' could not be found (are you missing a using directive or an assembly reference?) [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(30,14): error CS0103: The name 'ParameterLocation' does not exist in the current context [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(31,16): error CS0103: The name 'SecuritySchemeType' does not exist in the current context [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(35,34): error CS0246: The type or namespace name 'OpenApiSecurityRequirement' could not be found (are you missing a using directive or an assembly reference?) [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(38,17): error CS0246: The type or namespace name 'OpenApiSecurityScheme' could not be found (are you missing a using directive or an assembly reference?) [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(40,33): error CS0246: The type or namespace name 'OpenApiReference' could not be found (are you missing a using directive or an assembly reference?) [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(42,28): error CS0103: The name 'ReferenceType' does not exist in the current context [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+
+Build FAILED.
+
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(25,28): error CS0246: The type or namespace name 'OpenApiInfo' could not be found (are you missing a using directive or an assembly reference?) [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(26,43): error CS0246: The type or namespace name 'OpenApiSecurityScheme' could not be found (are you missing a using directive or an assembly reference?) [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(30,14): error CS0103: The name 'ParameterLocation' does not exist in the current context [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(31,16): error CS0103: The name 'SecuritySchemeType' does not exist in the current context [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(35,34): error CS0246: The type or namespace name 'OpenApiSecurityRequirement' could not be found (are you missing a using directive or an assembly reference?) [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(38,17): error CS0246: The type or namespace name 'OpenApiSecurityScheme' could not be found (are you missing a using directive or an assembly reference?) [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(40,33): error CS0246: The type or namespace name 'OpenApiReference' could not be found (are you missing a using directive or an assembly reference?) [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Program.cs(42,28): error CS0103: The name 'ReferenceType' does not exist in the current context [C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\ToDo.Api.csproj]
+    0 Warning(s)
+    8 Error(s)
+
+Time Elapsed 00:00:07.88

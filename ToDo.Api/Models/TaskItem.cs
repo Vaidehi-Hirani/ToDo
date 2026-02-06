@@ -12,7 +12,7 @@ public class TaskItem
         public string? Priority {get; set;} = "Medium";
         public string? Category {get; set;}
         public string? RepeatType {get; set;}
-        public bool IsDeleted {get; set;} 
+        public bool IsDeleted {get; set;} = false;
         public int UserId {get; set;}
         public User User {get; set;} = null!;
         public int? ProjectId {get; set;}

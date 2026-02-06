@@ -1,10 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using ToDo.Api.Data;
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +20,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// CORS Configuration
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular",
+        builder => builder
+            .WithOrigins(
+                "http://localhost:4200",
+                "http://localhost:49685"
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
 
 
 // ================= JWT CONFIG =================
@@ -68,6 +79,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// CORS must be called before Authentication and Authorization
+app.UseCors("AllowAngular");
 
 // IMPORTANT: Authentication BEFORE Authorization
 app.UseAuthentication();

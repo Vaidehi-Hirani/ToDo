@@ -1,0 +1,17 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Welcome to ToDo App</h1>
+    <button class="logout-button" (click)="onLogout()">Logout</button>
+  </div>
+
+  <div class="user-info" *ngIf="currentUser">
+    <h2>Hello, {{ currentUser.name }}!</h2>
+    <p>Email: {{ currentUser.email }}</p>
+    <p>User ID: {{ currentUser.id }}</p>
+  </div>
+
+  <div class="content">
+    <p>Your ToDo dashboard is ready!</p>
+    <p>Start building your tasks and projects here.</p>
+  </div>
+</div>

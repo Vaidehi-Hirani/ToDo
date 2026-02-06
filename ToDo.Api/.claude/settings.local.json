@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(dotnet run:*)",
+      "Bash(dotnet add:*)",
+      "Bash(powershell -Command \"Get-Process -Name ToDo.Api -ErrorAction SilentlyContinue | Stop-Process -Force\")"
+    ]
+  }
+}

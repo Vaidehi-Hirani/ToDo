@@ -1,0 +1,15 @@
+
+Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName                                                  
+-------  ------    -----      -----     ------     --  -- -----------                                                  
+     19       2      404       1608       0.20  37928   5 dotnet                                                       
+
+
+Using launch settings from C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api\Properties\launchSettings.json...
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5209
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\Users\Vaidehi\source\repos\ToDo\ToDo.Api
