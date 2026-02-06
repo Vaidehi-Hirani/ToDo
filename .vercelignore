@@ -1,0 +1,25 @@
+# Backend files
+ToDo.Api/
+ToDo/
+*.Api/
+*.csproj
+*.sln
+
+# Development files
+node_modules/
+.git/
+.vs/
+.vscode/
+.angular/
+
+# Build logs
+*.log
+build_*.txt
+
+# Environment files (already in Vercel dashboard)
+.env
+.env.local
+
+# Documentation
+README.md
+.env.example
