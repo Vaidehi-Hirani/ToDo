@@ -14,9 +14,19 @@ builder.Services.AddControllers();
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
+// Determine which database provider to use based on connection string
+var isPostgres = connectionString?.StartsWith("postgres") ?? false;
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlServer(connectionString);
+    if (isPostgres)
+    {
+        options.UseNpgsql(connectionString);
+    }
+    else
+    {
+        options.UseSqlServer(connectionString);
+    }
 });
 
 // Swagger
