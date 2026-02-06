@@ -50,8 +50,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
-          console.log('Login successful:', response);
-          this.isLoading = false;  // FIXED: Reset loading state
+          this.isLoading = false;
           this.router.navigate(['/dashboard']);
         },
         error: (error) => {

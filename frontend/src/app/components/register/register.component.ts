@@ -44,8 +44,7 @@ export class RegisterComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
-          console.log('Registration successful:', response);
-          this.isLoading = false;  // FIXED: Reset loading state
+          this.isLoading = false;
           this.router.navigate(['/dashboard']);
         },
         error: (error) => {

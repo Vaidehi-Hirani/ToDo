@@ -1,4 +1,5 @@
-// Development environment - connected to Railway backend
+// Optional: Use this file for testing against Railway production backend
+// Copy this to environment.ts when testing against production backend
 export const environment = {
   production: false,
   apiUrl: 'https://todo-production-01ab.up.railway.app/api',

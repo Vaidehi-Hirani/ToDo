@@ -58,7 +58,6 @@ export class AuthService {
     // Use the public method for better subscription management
     this.googleSignIn(idToken).subscribe({
       next: (user) => {
-        console.log('Google Sign-In successful:', user);
         // Navigate to dashboard (handled by component)
         window.location.href = '/dashboard';
       },
