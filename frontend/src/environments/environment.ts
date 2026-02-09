@@ -1,6 +1,6 @@
-// Development environment - connected to Railway backend
+// Development environment - connected to local backend
 export const environment = {
   production: false,
-  apiUrl: 'https://todo-production-01ab.up.railway.app/api',
+  apiUrl: 'http://localhost:5209/api',
   googleClientId: '949158046604-qae51oh1krmo3ino6l76rmd95hleo887.apps.googleusercontent.com'
 };

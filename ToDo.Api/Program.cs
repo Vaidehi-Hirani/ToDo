@@ -10,39 +10,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add Controllers
 builder.Services.AddControllers();
 
-// DB Context - Read from environment variable or appsettings
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
-    ?? builder.Configuration.GetConnectionString("DefaultConnection");
-
-// Log connection string info for debugging (hide password)
-if (string.IsNullOrEmpty(connectionString))
-{
-    Console.WriteLine("ERROR: No connection string found!");
-    throw new InvalidOperationException("DATABASE_URL environment variable is not set");
-}
-else
-{
-    var connPreview = connectionString.Length > 20
-        ? connectionString.Substring(0, 20) + "..."
-        : connectionString;
-    Console.WriteLine($"Connection string starts with: {connPreview}");
-}
-
-// Determine which database provider to use based on connection string
-var isPostgres = connectionString.StartsWith("postgres", StringComparison.OrdinalIgnoreCase);
-Console.WriteLine($"Using database provider: {(isPostgres ? "PostgreSQL" : "SQL Server")}");
+// DB Context
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-{
-    if (isPostgres)
-    {
-        options.UseNpgsql(connectionString);
-    }
-    else
-    {
-        options.UseSqlServer(connectionString);
-    }
-});
+    options.UseSqlServer(connectionString));
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
