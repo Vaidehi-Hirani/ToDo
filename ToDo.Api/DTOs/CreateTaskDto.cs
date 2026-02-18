@@ -20,5 +20,9 @@ public class CreateTaskDto
     
     public string? RepeatType { get; set; }
     
+    public RepeatCustomDto? RepeatCustom { get; set; }
+    
     public int? ProjectId { get; set; }
+    
+    public List<int>? LabelIds { get; set; }
 }

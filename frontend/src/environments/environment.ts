@@ -1,6 +1,6 @@
 // Development environment - connected to local backend
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:5209/api',
+  apiUrl: 'http://localhost:5211/api',
   googleClientId: '949158046604-qae51oh1krmo3ino6l76rmd95hleo887.apps.googleusercontent.com'
 };

@@ -5,8 +5,10 @@ public class User
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
+    public string Role { get; set; } = UserRole.User.ToString();
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiryTime { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public ICollection<TaskItem> Tasks { get; set; } = new List<TaskItem>();
+    public ICollection<Project> Projects { get; set; } = new List<Project>();
 }

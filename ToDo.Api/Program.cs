@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ToDo.Api.Data;
+using ToDo.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -20,6 +21,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Email Service
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // CORS Configuration - Read from environment variable or appsettings
 var allowedOriginsString = Environment.GetEnvironmentVariable("ALLOWED_ORIGINS");
@@ -136,9 +140,50 @@ if (app.Environment.IsDevelopment())
             return;
         }
         await next();
-        
+
     });
 }
 
+// Seed default admin user
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        // Check if admin user exists
+        var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "admin@gmail.com");
+
+        if (adminUser == null)
+        {
+            logger.LogInformation("Creating default admin user...");
+
+            var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<ToDo.Api.Models.User>();
+            var admin = new ToDo.Api.Models.User
+            {
+                Name = "Admin",
+                Email = "admin@gmail.com",
+                Role = "Admin",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            admin.PasswordHash = hasher.HashPassword(admin, "Admin.123");
+
+            context.Users.Add(admin);
+            await context.SaveChangesAsync();
+
+            logger.LogInformation("Default admin user created successfully!");
+        }
+        else
+        {
+            logger.LogInformation("Admin user already exists.");
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error creating default admin user");
+    }
+}
 
 app.Run();

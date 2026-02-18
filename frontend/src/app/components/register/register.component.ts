@@ -48,8 +48,6 @@ export class RegisterComponent {
           this.router.navigate(['/dashboard']);
         },
         error: (error) => {
-          console.error('Registration failed:', error);
-          alert(error.error?.message || 'Registration failed. Please try again.');
           this.isLoading = false;
         }
       });

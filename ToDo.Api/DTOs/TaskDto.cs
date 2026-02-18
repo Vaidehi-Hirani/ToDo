@@ -12,7 +12,10 @@ public class TaskDto
     public string? Priority { get; set; }
     public string? Category { get; set; }
     public string? RepeatType { get; set; }
+    public RepeatCustomDto? RepeatCustom { get; set; }
     public int? ProjectId { get; set; }
     public string? ProjectName { get; set; }
     public int UserId { get; set; }
+    public bool IsRecurring { get; set; }
+    public int? ParentTaskId { get; set; }
 }

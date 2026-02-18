@@ -10,7 +10,10 @@
       "Bash(dotnet build:*)",
       "Bash(npx tsc:*)",
       "Bash(dir:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(powershell:*)",
+      "Bash(dotnet run:*)",
+      "Bash(curl:*)"
     ]
   }
 }

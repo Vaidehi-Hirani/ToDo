@@ -10,6 +10,7 @@ using Google.Apis.Auth;
 using ToDo.Api.Data;
 using ToDo.Api.Models;
 using ToDo.Api.DTOs;
+using ToDo.Api.Services;
 
 namespace ToDo.Api.Controllers;
 
@@ -19,11 +20,13 @@ public class UsersController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly IConfiguration _config;
+    private readonly IEmailService _emailService;
 
-    public UsersController(AppDbContext context, IConfiguration config)
+    public UsersController(AppDbContext context, IConfiguration config, IEmailService emailService)
     {
         _context = context;
         _config = config;
+        _emailService = emailService;
     }
 
     // ================= REGISTER =================
@@ -45,7 +48,8 @@ public class UsersController : ControllerBase
         {
             Name = dto.Name,
             Email = dto.Email,
-            PasswordHash = dto.Password
+            PasswordHash = dto.Password,
+            Role = UserRole.User.ToString() // All new users are regular users
         };
 
         user.PasswordHash =
@@ -53,6 +57,19 @@ public class UsersController : ControllerBase
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+
+        // Send welcome email (fire-and-forget)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _emailService.SendWelcomeEmailAsync(user.Email, user.Name, user.Role);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to send welcome email: {ex.Message}");
+            }
+        });
 
         // Generate tokens so user is logged in after registration
         var token = GenerateJwtToken(user);
@@ -68,7 +85,8 @@ public class UsersController : ControllerBase
             RefreshToken = refreshToken,
             Id = user.Id,
             Name = user.Name,
-            Email = user.Email
+            Email = user.Email,
+            Role = user.Role
         });
     }
 
@@ -109,7 +127,8 @@ public class UsersController : ControllerBase
             RefreshToken = refreshToken,
             Id = user.Id,
             Name = user.Name,
-            Email = user.Email
+            Email = user.Email,
+            Role = user.Role
         });
     }
 
@@ -147,11 +166,25 @@ public class UsersController : ControllerBase
                 {
                     Name = payload.Name ?? payload.Email.Split('@')[0],
                     Email = payload.Email,
-                    PasswordHash = string.Empty // No password for Google users
+                    PasswordHash = string.Empty, // No password for Google users
+                    Role = UserRole.User.ToString() // All new users are regular users
                 };
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
+
+                // Send welcome email (fire-and-forget)
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _emailService.SendWelcomeEmailAsync(user.Email, user.Name, user.Role);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine($"Failed to send welcome email: {ex.Message}");
+                    }
+                });
             }
 
             // Generate JWT token
@@ -169,7 +202,8 @@ public class UsersController : ControllerBase
                 RefreshToken = refreshToken,
                 Id = user.Id,
                 Name = user.Name,
-                Email = user.Email
+                Email = user.Email,
+                Role = user.Role
             });
         }
         catch (Exception ex)
@@ -227,7 +261,8 @@ public class UsersController : ControllerBase
             RefreshToken = newRefreshToken,
             Id = user.Id,
             Name = user.Name,
-            Email = user.Email
+            Email = user.Email,
+            Role = user.Role
         });
     }
 
@@ -240,7 +275,8 @@ public class UsersController : ControllerBase
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim("name", user.Name)
+            new Claim("name", user.Name),
+            new Claim(ClaimTypes.Role, user.Role)
         };
 
         var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY")

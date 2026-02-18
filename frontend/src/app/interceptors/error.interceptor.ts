@@ -37,13 +37,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       if (error.status === 403) {
-        console.error('Forbidden access');
-        alert('You do not have permission to access this resource');
       }
 
       if (error.status === 0) {
-        console.error('Network error - unable to reach the server');
-        alert('Unable to connect to the server. Please check your internet connection.');
       }
 
       return throwError(() => error);

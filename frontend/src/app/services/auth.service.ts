@@ -12,6 +12,7 @@ export interface AuthResponse {
   id: number;
   name: string;
   email: string;
+  role: string;
   isNewUser?: boolean;
 }
 
@@ -33,6 +34,10 @@ export class AuthService {
   }
 
   initGoogleSignIn(buttonElement: HTMLElement): void {
+    if (typeof google === 'undefined' || !google.accounts) {
+      return;
+    }
+
     google.accounts.id.initialize({
       client_id: environment.googleClientId,
       callback: (response: any) => this.handleGoogleResponse(response),
@@ -55,15 +60,11 @@ export class AuthService {
   private handleGoogleResponse(response: any): void {
     const idToken = response.credential;
 
-    // Use the public method for better subscription management
     this.googleSignIn(idToken).subscribe({
       next: (user) => {
-        // Navigate to dashboard (handled by component)
         window.location.href = '/dashboard';
       },
       error: (error) => {
-        console.error('Google Sign-In failed:', error);
-        alert('Failed to sign in with Google');
       }
     });
   }
@@ -116,9 +117,6 @@ export class AuthService {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     this.currentUserSubject.next(null);
-    if (typeof google !== 'undefined' && google.accounts) {
-      google.accounts.id.disableAutoSelect();
-    }
   }
 
   refreshToken(): Observable<AuthResponse> {
@@ -152,5 +150,15 @@ export class AuthService {
 
   getCurrentUser(): AuthResponse | null {
     return this.currentUserSubject.value;
+  }
+
+  isAdmin(): boolean {
+    const user = this.getCurrentUser();
+    return user?.role === 'Admin';
+  }
+
+  isUser(): boolean {
+    const user = this.getCurrentUser();
+    return user?.role === 'User';
   }
 }

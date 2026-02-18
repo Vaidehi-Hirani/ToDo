@@ -5,6 +5,8 @@ import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
 
+declare const google: any;
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -31,8 +33,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    // Initialize Google Sign-In button
-    if (this.googleButton) {
+    if (typeof google !== 'undefined' && this.googleButton) {
       setTimeout(() => {
         this.authService.initGoogleSignIn(this.googleButton.nativeElement);
       }, 100);
@@ -54,8 +55,6 @@ export class LoginComponent implements OnInit, AfterViewInit {
           this.router.navigate(['/dashboard']);
         },
         error: (error) => {
-          console.error('Login failed:', error);
-          alert('Invalid credentials');
           this.isLoading = false;
         }
       });

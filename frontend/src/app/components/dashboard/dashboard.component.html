@@ -1,17 +1,364 @@
 <div class="dashboard-container">
-  <div class="dashboard-header">
-    <h1>Welcome to ToDo App</h1>
-    <button class="logout-button" (click)="onLogout()">Logout</button>
+  <!-- Header -->
+  <header class="dashboard-header">
+    <div class="header-content">
+      <div class="logo-section">
+        <h1>📝 ToDo App</h1>
+      </div>
+      <div class="user-section">
+        <div class="user-info-compact" *ngIf="currentUser">
+          <span class="user-name">Hi, {{ currentUser.name }}</span>
+          <span class="user-role-badge" [ngClass]="getRoleBadgeClass(currentUser.role)">
+            {{ currentUser.role }}
+          </span>
+        </div>
+        <button class="logout-button" (click)="onLogout()">
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="nav-tabs" *ngIf="isAdmin">
+    <button
+      class="nav-tab"
+      [class.active]="activeTab === 'overview'"
+      (click)="switchTab('overview')">
+      <span class="tab-icon">🏠</span>
+      <span>Overview</span>
+    </button>
+    <button
+      class="nav-tab"
+      [class.active]="activeTab === 'admin'"
+      (click)="switchTab('admin')">
+      <span class="tab-icon">👥</span>
+      <span>Admin Panel</span>
+    </button>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="dashboard-content">
+    <!-- Overview Tab -->
+    <div *ngIf="activeTab === 'overview'" class="tab-content">
+      <div class="welcome-card">
+        <h2>Welcome back, {{ currentUser?.name }}! 👋</h2>
+        <p class="welcome-subtitle">{{ currentUser?.email }}</p>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">📋</div>
+            <div class="stat-info">
+              <h3>Tasks</h3>
+              <p class="stat-number">{{ tasks.length }}</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📁</div>
+            <div class="stat-info">
+              <h3>Projects</h3>
+              <p class="stat-number">{{ projects.length }}</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+              <h3>Completed</h3>
+              <p class="stat-number">{{ completedTasksCount }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <h3>Quick Actions</h3>
+        <div class="action-buttons">
+          <button class="action-btn" (click)="openTaskModal()">
+            <span class="action-icon">➕</span>
+            <span>Create Task</span>
+          </button>
+          <button class="action-btn" (click)="openProjectModal()">
+            <span class="action-icon">📂</span>
+            <span>New Project</span>
+          </button>
+          <button class="action-btn" (click)="loadTasksAndProjects()">
+            <span class="action-icon">🔄</span>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tasks List -->
+      <div class="tasks-section">
+        <h3>📋 My Tasks ({{ pendingTasks.length }} pending)</h3>
+        <div class="tasks-list" *ngIf="pendingTasks.length > 0; else noTasks">
+          <div class="task-item" *ngFor="let task of pendingTasks">
+            <div class="task-checkbox">
+              <input
+                type="checkbox"
+                [checked]="task.isCompleted"
+                (change)="toggleTask(task)"
+                [id]="'task-' + task.id">
+              <label [for]="'task-' + task.id"></label>
+            </div>
+            <div class="task-content">
+              <h4 [class.completed]="task.isCompleted">{{ task.title }}</h4>
+              <p *ngIf="task.description">{{ task.description }}</p>
+              <div class="task-meta">
+                <span *ngIf="task.projectName" class="task-project">📁 {{ task.projectName }}</span>
+                <span *ngIf="task.priority" class="task-priority" [attr.data-priority]="task.priority">
+                  {{ task.priority }}
+                </span>
+                <span *ngIf="task.dueDate" class="task-due">📅 {{ task.dueDate | date: 'MMM d' }}</span>
+              </div>
+            </div>
+            <button class="task-delete" (click)="deleteTask(task.id)" title="Delete task">
+              🗑️
+            </button>
+          </div>
+        </div>
+        <ng-template #noTasks>
+          <div class="empty-state-small">
+            <p>No pending tasks. Create one to get started! 🎉</p>
+          </div>
+        </ng-template>
+      </div>
+
+      <!-- Projects List -->
+      <div class="projects-section">
+        <h3>📁 My Projects ({{ projects.length }})</h3>
+        <div class="projects-grid" *ngIf="projects.length > 0; else noProjects">
+          <div class="project-card" *ngFor="let project of projects">
+            <div class="project-header">
+              <h4>{{ project.name }}</h4>
+              <button class="project-delete" (click)="deleteProject(project.id)" title="Delete project">
+                🗑️
+              </button>
+            </div>
+            <p *ngIf="project.description" class="project-desc">{{ project.description }}</p>
+            <div class="project-stats">
+              <span class="project-stat">
+                📋 {{ project.taskCount }} tasks
+              </span>
+              <span class="project-stat">
+                ✅ {{ project.completedTaskCount }} completed
+              </span>
+            </div>
+            <div class="project-progress" *ngIf="project.taskCount > 0">
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="(project.completedTaskCount / project.taskCount) * 100"></div>
+              </div>
+              <span class="progress-text">
+                {{ ((project.completedTaskCount / project.taskCount) * 100).toFixed(0) }}%
+              </span>
+            </div>
+          </div>
+        </div>
+        <ng-template #noProjects>
+          <div class="empty-state-small">
+            <p>No projects yet. Create one to organize your tasks! 📂</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Admin Panel Tab -->
+    <div *ngIf="activeTab === 'admin' && isAdmin" class="tab-content">
+      <div class="admin-header">
+        <h2>👥 User Management</h2>
+        <button class="refresh-btn" (click)="loadUsers()" [disabled]="loading">
+          <span *ngIf="!loading">🔄 Refresh</span>
+          <span *ngIf="loading">⏳ Loading...</span>
+        </button>
+      </div>
+
+      <!-- Error Message -->
+      <div class="error-message" *ngIf="error">
+        <span class="error-icon">⚠️</span>
+        <span>{{ error }}</span>
+        <button class="error-close" (click)="error = ''">×</button>
+      </div>
+
+      <!-- Users Table -->
+      <div class="users-container">
+        <div class="users-table-wrapper">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Joined</th>
+                <th>Tasks</th>
+                <th>Projects</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let user of users" [class.current-user]="user.id === currentUser?.id">
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar">{{ user.name.charAt(0).toUpperCase() }}</div>
+                    <span class="user-name-text">{{ user.name }}</span>
+                    <span class="you-badge" *ngIf="user.id === currentUser?.id">You</span>
+                  </div>
+                </td>
+                <td class="email-cell">{{ user.email }}</td>
+                <td>
+                  <span class="role-badge" [ngClass]="getRoleBadgeClass(user.role)">
+                    {{ user.role }}
+                  </span>
+                </td>
+                <td class="date-cell">{{ user.createdAt | date: 'MMM d, y' }}</td>
+                <td class="count-cell">{{ user.taskCount }}</td>
+                <td class="count-cell">{{ user.projectCount }}</td>
+                <td class="actions-cell">
+                  <button
+                    class="action-icon-btn promote-btn"
+                    (click)="toggleUserRole(user)"
+                    [disabled]="loading || user.id === currentUser?.id"
+                    [title]="user.role === 'Admin' ? 'Demote to User' : 'Promote to Admin'">
+                    <span *ngIf="user.role === 'Admin'">⬇️</span>
+                    <span *ngIf="user.role === 'User'">⬆️</span>
+                  </button>
+                  <button
+                    class="action-icon-btn delete-btn"
+                    (click)="deleteUser(user.id, user.name)"
+                    [disabled]="loading || user.id === currentUser?.id"
+                    title="Delete User">
+                    🗑️
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="empty-state" *ngIf="!loading && users.length === 0">
+            <span class="empty-icon">👤</span>
+            <p>No users found</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-footer">
+        <p class="info-text">
+          <span class="info-icon">ℹ️</span>
+          You cannot delete or demote yourself. At least one admin must exist.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Task Modal -->
+  <div class="modal-overlay" *ngIf="showTaskModal" (click)="closeTaskModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>➕ Create New Task</h3>
+        <button class="modal-close" (click)="closeTaskModal()">×</button>
+      </div>
+      <form (ngSubmit)="createTask()" class="modal-form">
+        <div class="form-group">
+          <label for="taskTitle">Title *</label>
+          <input
+            type="text"
+            id="taskTitle"
+            [(ngModel)]="newTask.title"
+            name="taskTitle"
+            placeholder="Enter task title"
+            required>
+        </div>
+        <div class="form-group">
+          <label for="taskDesc">Description</label>
+          <textarea
+            id="taskDesc"
+            [(ngModel)]="newTask.description"
+            name="taskDesc"
+            placeholder="Enter task description"
+            rows="3"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskPriority">Priority</label>
+            <select id="taskPriority" [(ngModel)]="newTask.priority" name="taskPriority">
+              <option value="">None</option>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="taskDue">Due Date</label>
+            <input
+              type="date"
+              id="taskDue"
+              [(ngModel)]="newTask.dueDate"
+              name="taskDue">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="taskProject">Project</label>
+          <select id="taskProject" [(ngModel)]="newTask.projectId" name="taskProject">
+            <option [ngValue]="undefined">No Project</option>
+            <option *ngFor="let project of projects" [ngValue]="project.id">
+              {{ project.name }}
+            </option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeTaskModal()">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="!newTask.title.trim()">
+            Create Task
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
-  <div class="user-info" *ngIf="currentUser">
-    <h2>Hello, {{ currentUser.name }}!</h2>
-    <p>Email: {{ currentUser.email }}</p>
-    <p>User ID: {{ currentUser.id }}</p>
-  </div>
-
-  <div class="content">
-    <p>Your ToDo dashboard is ready!</p>
-    <p>Start building your tasks and projects here.</p>
+  <!-- Project Modal -->
+  <div class="modal-overlay" *ngIf="showProjectModal" (click)="closeProjectModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>📂 Create New Project</h3>
+        <button class="modal-close" (click)="closeProjectModal()">×</button>
+      </div>
+      <form (ngSubmit)="createProject()" class="modal-form">
+        <div class="form-group">
+          <label for="projectName">Name *</label>
+          <input
+            type="text"
+            id="projectName"
+            [(ngModel)]="newProject.name"
+            name="projectName"
+            placeholder="Enter project name"
+            required>
+        </div>
+        <div class="form-group">
+          <label for="projectDesc">Description</label>
+          <textarea
+            id="projectDesc"
+            [(ngModel)]="newProject.description"
+            name="projectDesc"
+            placeholder="Enter project description"
+            rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="projectDue">Due Date</label>
+          <input
+            type="date"
+            id="projectDue"
+            [(ngModel)]="newProject.dueDate"
+            name="projectDue">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeProjectModal()">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="!newProject.name.trim()">
+            Create Project
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
